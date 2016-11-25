@@ -4,6 +4,8 @@
   "description": "Course source files for the title \"Mastering Flux\"",
   "main": "index.js",
   "scripts": {
+    "start": "nodemon index",
+    "demon": "nodemon index",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -23,5 +25,11 @@
   "bugs": {
     "url": "https://github.com/02GEEK/mastering-flux/issues"
   },
-  "homepage": "https://github.com/02GEEK/mastering-flux#readme"
+  "homepage": "https://github.com/02GEEK/mastering-flux#readme",
+  "dependencies": {
+    "ejs": "^2.5.2",
+    "express": "^4.14.0",
+    "mongoose": "^4.7.0",
+    "nodemon": "^1.11.0"
+  }
 }
