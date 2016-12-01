@@ -9,11 +9,13 @@ mongoose.connect('mongodb://localhost/to-do',(err)=>{
 
 app.set('view engine', 'ejs');
 
+app.use(express.static('deploy'));
+
 app.get("/", (req,res)=>{
 	//res.send("Hello world 2.0!");
 	res.render('blank',{
 		title:"Mastering Flux",
-		body: "Hello World 3.1"
+		body: "<div id='root'></div>"
 	});
 });
 
