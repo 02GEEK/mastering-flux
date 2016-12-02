@@ -21540,7 +21540,7 @@
 				var tasks = this.state.tasks.slice(0),
 				    input = this.input;
 
-				(0, _tasks3.addTask)({ label: input.value, _id: tasks.length });
+				(0, _tasks3.addTask)({ label: input.value });
 
 				//
 			}
@@ -21565,7 +21565,7 @@
 
 						chl.push(_react2.default.createElement(
 							_task2.default,
-							{ key: _id },
+							{ key: _id, id: _id },
 							label
 						));
 					}
@@ -21625,6 +21625,8 @@
 
 	var _button2 = _interopRequireDefault(_button);
 
+	var _tasks = __webpack_require__(187);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -21636,18 +21638,26 @@
 	var Task = function (_React$Component) {
 		_inherits(Task, _React$Component);
 
-		function Task() {
+		function Task(props) {
 			_classCallCheck(this, Task);
 
-			return _possibleConstructorReturn(this, (Task.__proto__ || Object.getPrototypeOf(Task)).apply(this, arguments));
+			var _this = _possibleConstructorReturn(this, (Task.__proto__ || Object.getPrototypeOf(Task)).call(this));
+
+			_this.onClick = _this.onClick.bind(_this);
+			return _this;
 		}
 
 		_createClass(Task, [{
+			key: 'onClick',
+			value: function onClick(e) {
+				(0, _tasks.remove)({ _id: this.props.id });
+			}
+		}, {
 			key: 'render',
 			value: function render() {
 				return _react2.default.createElement(
 					_button2.default,
-					{ className: '-primary -lg -block' },
+					{ onClick: this.onClick, className: '-primary -lg -block' },
 					this.props.children
 				);
 			}
@@ -21741,6 +21751,8 @@
 
 	var ACT = _interopRequireWildcard(_types);
 
+	var _tasks = __webpack_require__(187);
+
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -21761,6 +21773,7 @@
 
 			_this.tasks = [];
 			_this.action = _this.action.bind(_this);
+			(0, _tasks.initTasks)();
 			return _this;
 		}
 
@@ -21768,6 +21781,12 @@
 			key: 'getTasks',
 			value: function getTasks() {
 				return this.tasks.slice(0);
+			}
+		}, {
+			key: 'initTasks',
+			value: function initTasks(tasks) {
+				this.tasks = tasks;
+				this.emit('change');
 			}
 		}, {
 			key: 'addTask',
@@ -21780,14 +21799,30 @@
 				this.emit('change');
 			}
 		}, {
+			key: 'remove',
+			value: function remove(_ref) {
+				var _id = _ref._id;
+
+				this.tasks = this.tasks.filter(function (task) {
+					return task._id !== _id;
+				});
+				this.emit('change');
+			}
+		}, {
 			key: 'action',
-			value: function action(_ref) {
-				var type = _ref.type,
-				    payload = _ref.payload;
+			value: function action(_ref2) {
+				var type = _ref2.type,
+				    payload = _ref2.payload;
 
 				switch (type) {
 					case ACT.ADD_TASK:
 						this.addTask(payload);
+						break;
+					case ACT.INIT_TASKS:
+						this.initTasks(payload);
+						break;
+					case ACT.REMOVED:
+						this.remove(payload);
 						break;
 				}
 			}
@@ -22387,6 +22422,8 @@
 	  value: true
 	});
 	var ADD_TASK = exports.ADD_TASK = 'addTask';
+	var INIT_TASKS = exports.INIT_TASKS = 'initTasks';
+	var REMOVED = exports.REMOVED = 'removed';
 
 /***/ },
 /* 187 */
@@ -22398,6 +22435,9 @@
 		value: true
 	});
 	exports.addTask = addTask;
+	exports.remove = remove;
+	exports.addTaskSync = addTaskSync;
+	exports.initTasks = initTasks;
 
 	var _dispatcher = __webpack_require__(183);
 
@@ -22407,15 +22447,325 @@
 
 	var ACT = _interopRequireWildcard(_types);
 
+	var _ajax = __webpack_require__(188);
+
+	var _ajax2 = _interopRequireDefault(_ajax);
+
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function addTask(packt) {
+		(0, _ajax2.default)({
+			url: '/add-task',
+			data: packt,
+			successHook: function successHook(task) {
+				console.log("task added");
+				addTaskSync(task);
+			}
+		});
+	}
+
+	function remove(packt) {
+		(0, _ajax2.default)({
+			url: '/remove',
+			data: packt,
+			successHook: function successHook(_ref) {
+				var removed = _ref.removed;
+
+				removed && _dispatcher2.default.dispatch({ type: ACT.REMOVED, payload: packt });
+			}
+		});
+	}
+
+	function addTaskSync(packt) {
 		//changes happen here
 
 		_dispatcher2.default.dispatch({ type: ACT.ADD_TASK, payload: packt });
 	}
+
+	function initTasks() {
+		(0, _ajax2.default)({
+			url: '/all',
+			method: 'get',
+			successHook: function successHook(tasks) {
+				_dispatcher2.default.dispatch({ type: ACT.INIT_TASKS, payload: tasks });
+			}
+		});
+	}
+
+/***/ },
+/* 188 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+
+	exports.default = function (_ref) {
+		var _ref$url = _ref.url,
+		    url = _ref$url === undefined ? "" : _ref$url,
+		    _ref$method = _ref.method,
+		    method = _ref$method === undefined ? "post" : _ref$method,
+		    _ref$data = _ref.data,
+		    data = _ref$data === undefined ? {} : _ref$data,
+		    failHook = _ref.failHook,
+		    successHook = _ref.successHook;
+
+
+		var aj = new _simpleAjax2.default({
+			url: url, method: method,
+			data: JSON.stringify(data)
+		});
+
+		aj.on('success', function (e) {
+			//
+		});
+
+		aj.on('error', function (e) {
+			failHook && failHook(e.target.response);
+		});
+
+		aj.on('complete', function (e) {
+			successHook && successHook(JSON.parse(e.target.response));
+		});
+
+		aj.send();
+	};
+
+	var _simpleAjax = __webpack_require__(189);
+
+	var _simpleAjax2 = _interopRequireDefault(_simpleAjax);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+/***/ },
+/* 189 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var EventEmitter = __webpack_require__(182).EventEmitter,
+	    queryString = __webpack_require__(190);
+
+	function tryParseJson(data){
+	    try{
+	        return JSON.parse(data);
+	    }catch(error){
+	        return error;
+	    }
+	}
+
+	function timeout(){
+	   this.request.abort();
+	   this.emit('timeout');
+	}
+
+	function Ajax(settings){
+	    var queryStringData,
+	        ajax = this;
+
+	    if(typeof settings === 'string'){
+	        settings = {
+	            url: settings
+	        };
+	    }
+
+	    if(typeof settings !== 'object'){
+	        settings = {};
+	    }
+
+	    ajax.settings = settings;
+	    ajax.request = new XMLHttpRequest();
+	    ajax.settings.method = ajax.settings.method || 'get';
+
+	    if(ajax.settings.cors && !'withCredentials' in ajax.request){
+	        if (typeof XDomainRequest !== 'undefined') {
+	            // XDomainRequest only exists in IE, and is IE's way of making CORS requests.
+	            ajax.request = new XDomainRequest();
+	        } else {
+	            // Otherwise, CORS is not supported by the browser.
+	            ajax.emit('error', new Error('Cors is not supported by this browser'));
+	        }
+	    }
+
+	    if(ajax.settings.cache === false){
+	        ajax.settings.data = ajax.settings.data || {};
+	        ajax.settings.data._ = new Date().getTime();
+	    }
+
+	    if(ajax.settings.method.toLowerCase() === 'get' && typeof ajax.settings.data === 'object'){
+	        var urlParts = ajax.settings.url.split('?');
+
+	        queryStringData = queryString.parse(urlParts[1]);
+
+	        for(var key in ajax.settings.data){
+	            queryStringData[key] = ajax.settings.data[key];
+	        }
+
+	        var parsedQueryStringData = queryString.stringify(queryStringData);
+
+	        ajax.settings.url = urlParts[0] + (parsedQueryStringData ? '?' + parsedQueryStringData : '');
+	        ajax.settings.data = null;
+	    }
+
+	    ajax.request.addEventListener('progress', function(event){
+	        ajax.emit('progress', event);
+	    }, false);
+
+	    ajax.request.addEventListener('load', function(event){
+	        var data = event.target.responseText;
+
+	        if(ajax.settings.dataType && ajax.settings.dataType.toLowerCase() === 'json'){
+	            if(data === ''){
+	                data = undefined;
+	            }else{
+	                data = tryParseJson(data);
+	                if(data instanceof Error){
+	                    ajax.emit('error', event, data);
+	                    return;
+	                }
+	            }
+	        }
+
+	        if(event.target.status >= 400){
+	            ajax.emit('error', event, data);
+	        } else {
+	            ajax.emit('success', event, data);
+	        }
+
+	    }, false);
+
+	    ajax.request.addEventListener('error', function(event){
+	        ajax.emit('error', event);
+	    }, false);
+
+	    ajax.request.addEventListener('abort', function(event){
+	        ajax.emit('error', event, new Error('Connection Aborted'));
+	        ajax.emit('abort', event);
+	    }, false);
+
+	    ajax.request.addEventListener('loadend', function(event){
+	        clearTimeout(ajax._requestTimeout);
+	        ajax.emit('complete', event);
+	    }, false);
+
+	    ajax.request.open(ajax.settings.method || 'get', ajax.settings.url, true);
+
+	    if(ajax.settings.cors && 'withCredentials' in ajax.request) {
+	        ajax.request.withCredentials = !!settings.withCredentials;
+	    }
+
+	    // Set default headers
+	    if(ajax.settings.contentType !== false){
+	        ajax.request.setRequestHeader('Content-Type', ajax.settings.contentType || 'application/json; charset=utf-8');
+	    }
+	    if(ajax.settings.requestedWith !== false) {
+	        ajax.request.setRequestHeader('X-Requested-With', ajax.settings.requestedWith || 'XMLHttpRequest');
+	    }
+	    if(ajax.settings.auth){
+	        ajax.request.setRequestHeader('Authorization', ajax.settings.auth);
+	    }
+
+	    // Set custom headers
+	    for(var headerKey in ajax.settings.headers){
+	        ajax.request.setRequestHeader(headerKey, ajax.settings.headers[headerKey]);
+	    }
+
+	    if(ajax.settings.processData !== false && ajax.settings.dataType === 'json'){
+	        ajax.settings.data = JSON.stringify(ajax.settings.data);
+	    }
+	}
+
+	Ajax.prototype = Object.create(EventEmitter.prototype);
+
+	Ajax.prototype.send = function(){
+	    var ajax = this;
+
+	    ajax._requestTimeout = setTimeout(
+	        function(){
+	            timeout.apply(ajax, []);
+	        },
+	        ajax.settings.timeout || 120000
+	    );
+
+	    ajax.request.send(ajax.settings.data && ajax.settings.data);
+	};
+
+	module.exports = Ajax;
+
+
+/***/ },
+/* 190 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_RESULT__;/*!
+		query-string
+		Parse and stringify URL query strings
+		https://github.com/sindresorhus/query-string
+		by Sindre Sorhus
+		MIT License
+	*/
+	(function () {
+		'use strict';
+		var queryString = {};
+
+		queryString.parse = function (str) {
+			if (typeof str !== 'string') {
+				return {};
+			}
+
+			str = str.trim().replace(/^(\?|#)/, '');
+
+			if (!str) {
+				return {};
+			}
+
+			return str.trim().split('&').reduce(function (ret, param) {
+				var parts = param.replace(/\+/g, ' ').split('=');
+				var key = parts[0];
+				var val = parts[1];
+
+				key = decodeURIComponent(key);
+				// missing `=` should be `null`:
+				// http://w3.org/TR/2012/WD-url-20120524/#collect-url-parameters
+				val = val === undefined ? null : decodeURIComponent(val);
+
+				if (!ret.hasOwnProperty(key)) {
+					ret[key] = val;
+				} else if (Array.isArray(ret[key])) {
+					ret[key].push(val);
+				} else {
+					ret[key] = [ret[key], val];
+				}
+
+				return ret;
+			}, {});
+		};
+
+		queryString.stringify = function (obj) {
+			return obj ? Object.keys(obj).map(function (key) {
+				var val = obj[key];
+
+				if (Array.isArray(val)) {
+					return val.map(function (val2) {
+						return encodeURIComponent(key) + '=' + encodeURIComponent(val2);
+					}).join('&');
+				}
+
+				return encodeURIComponent(key) + '=' + encodeURIComponent(val);
+			}).join('&') : '';
+		};
+
+		if (true) {
+			!(__WEBPACK_AMD_DEFINE_RESULT__ = function() { return queryString; }.call(exports, __webpack_require__, exports, module), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+		} else if (typeof module !== 'undefined' && module.exports) {
+			module.exports = queryString;
+		} else {
+			self.queryString = queryString;
+		}
+	})();
+
 
 /***/ }
 /******/ ]);

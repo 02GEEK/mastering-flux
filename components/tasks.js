@@ -25,7 +25,7 @@ export default class Tasks extends React.Component{
 		const 	tasks = this.state.tasks.slice(0),
 				input = this.input;
 
-		addTask({label:input.value, _id:tasks.length});
+		addTask({label:input.value});
 
 		//
 	}
@@ -34,7 +34,7 @@ export default class Tasks extends React.Component{
 		const 	{tasks} = this.state,
 				chl = [];
 		for(const {_id,label, ...rest} of tasks){
-			chl.push(<Task key={_id}>{label}</Task>);
+			chl.push(<Task key={_id} id={_id}>{label}</Task>);
 		}
 
 		return <div>
